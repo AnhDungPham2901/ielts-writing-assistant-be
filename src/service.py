@@ -1,24 +1,27 @@
 from pydantic import BaseModel
 from openai import OpenAI
+from pydantic import Field
+from dotenv import load_dotenv
+load_dotenv()
 
-class CheckResult(BaseModel):
-    task_name: str
-    is_passed: str
-    description: str
+class WordLevel(BaseModel):
+    word: str = Field(..., description="Individual word in the given text to be checked CEFR level")
+    level: str = Field(..., description="CEFR level of the word, e.g., A1, A2, B1, B2, C1, C2")
 
-class TaskCheckResponses(BaseModel):
-    results: list[CheckResult]
+class WordLevelResponse(BaseModel):
+    results: list[WordLevel] = Field(..., description="List of words with their CEFR levels")
 
 
-def check_task_completion(task: str, response: str) -> TaskCheckResponses:
+def check_word_levels(text: str) -> WordLevelResponse:
     client = OpenAI()
+
     completion = client.chat.completions.parse(
         model="gpt-4o-mini",
         messages=[
-            {"role": "system", "content": "Extract the event information."},
-            {"role": "user", "content": "Alice and Bob are going to a science fair on Friday."},
+            {"role": "system", "content": "Your duty is to check every word in the given text and provide its CEFR level. Don't skip any word, even if it is a common word."},
+            {"role": "user", "content": f"Given text: {text} \nPlease provide the CEFR level for each word in the text."},
         ],
-        response_format=TaskCheckResponses,
+        response_format=WordLevelResponse,
     )
 
     result = completion.choices[0].message.parsed

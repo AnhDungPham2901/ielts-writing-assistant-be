@@ -1,18 +1,25 @@
 # main.py
 from fastapi import FastAPI
 import service
+from loguru import logger
 
 app = FastAPI()
 
 
-@app.get("/")
-def read_root():
-    return {"message": "Hello, FastAPI!"}
+@app.get("/health")
+def health_check():
+    return {"status": "healthy"}
 
-@app.post("/task-completion-check")
-def check_task_completion(task: str, response: str):
+@app.post("/word-level-check")
+def check_word_levels(text: str) -> dict:
     """
-    Check if the task is completed based on the response.
+    Check the CEFR levels of each word in the given text.
     """
-    result = service.check_task_completion(task, response)
-    return result
+    result = service.check_word_levels(text)
+    if not result:
+        logger.error("No words found or unable to process the text.")
+        return {"error": "No words found or unable to process the text."}
+    logger.info(f"Number of words checked: {len(result.results)}")
+    # Convert the result to a dictionary format
+    word_levels = {word.word: word.level for word in result.results}
+    return word_levels
